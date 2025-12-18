@@ -6,10 +6,12 @@ import datetime
 from supabase import create_client, Client
 
 # ==============================================================================
-# [설정] Supabase 및 API 키
+# [설정] Supabase 및 API 키 (로컬/서버 공용 설정)
 # ==============================================================================
-SUPABASE_URL = "https://nxzkhhfvlswyiekwonoq.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54emtoaGZ2bHN3eWlla3dvbm9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMjMwNzAsImV4cCI6MjA4MTU5OTA3MH0.9-n-mPE_glHDLKZTmCL26M0y0aEWEa31SWLvQycKQys"
+# 깃허브 액션 Secrets 혹은 OS 환경변수에서 값을 가져오고, 없으면 기본값을 사용합니다.
+SUPABASE_URL = os.environ.get("SUPABASE_URL") or "https://nxzkhhfvlswyiekwonoq.supabase.co"
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54emtoaGZ2bHN3eWlla3dvbm9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMjMwNzAsImV4cCI6MjA4MTU5OTA3MH0.9-n-mPE_glHDLKZTmCL26M0y0aEWEa31SWLvQycKQys"
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def get_yahoo_data(df_input):
@@ -52,7 +54,7 @@ def get_market_data(market_type):
     else: 
         file_base, fdr_listing = 'my_sectors_kosdaq150', 'KOSDAQ'
 
-    # 1. CSV 파일 읽기
+    # 1. CSV 파일 읽기 (경로 설정 강화)
     csv_path = os.path.join(os.path.dirname(__file__), f'{file_base}.csv')
     if not os.path.exists(csv_path):
         print(f"❌ 파일을 찾을 수 없음: {csv_path}")
@@ -74,7 +76,6 @@ def get_market_data(market_type):
     df_fdr['Code'] = df_fdr['Code'].str.zfill(6)
 
     # 3. [핵심] CSV에 있는 종목만 남기기 (inner merge)
-    # CSV의 '종목코드'와 실시간 'Code'가 정확히 일치하는 것만 합칩니다.
     df_final = pd.merge(df_fdr, df_custom, left_on='Code', right_on='종목코드', how='inner')
 
     # 4. 시가총액 계산
@@ -116,11 +117,8 @@ def update_to_supabase(df, market_label):
         print(f"❌ {market_label} 오류: {e}")
 
 if __name__ == "__main__":
-    print(f"🚀 수집 시작: {datetime.datetime.now()}")
+    print(f"🚀 데이터 수집 시작: {datetime.datetime.now()}")
     
-    # 작업 전 기존 데이터 중 엉뚱하게 들어간 것 방지를 위해 수동 삭제 권장
-    # (또는 여기서 삭제 코드를 넣을 수 있지만 안전을 위해 수동 삭제 후 실행 추천)
-
     # 1. 코스피 처리
     df_k200 = get_market_data('KOSPI200')
     update_to_supabase(df_k200, 'KOSPI200')
@@ -129,4 +127,4 @@ if __name__ == "__main__":
     df_k150 = get_market_data('KOSDAQ150')
     update_to_supabase(df_k150, 'KOSDAQ150')
     
-    print("🏁 완료!")
+    print("🏁 모든 데이터 전송 완료!")
