@@ -318,7 +318,8 @@ export default function PerfectStockMap() {
         </div>
       </header>
 
-      <div className="w-full max-w-7xl mx-auto h-24 bg-gray-50 my-2 border flex items-center justify-center text-gray-300 font-bold uppercase tracking-widest">Advertisement Area</div>
+      {/* [수정] 상단 광고 영역 텍스트 제거 */}
+      <div className="w-full max-w-7xl mx-auto h-24 bg-gray-50 my-2 border flex items-center justify-center"></div>
 
       <main className="max-w-7xl mx-auto p-4 space-y-4">
         <div className="flex justify-between items-end pb-2">
@@ -365,7 +366,6 @@ export default function PerfectStockMap() {
                       style={{ display: sector.value >= 30 ? 'block' : 'none' }}
                       onMouseEnter={(e) => setTooltip({show: true, x: e.clientX, y: e.clientY, content: (
                         <div className="p-2 font-bold text-xs whitespace-nowrap">
-                          {/* [섹터 툴팁 수정] 종목 툴팁과 통일 */}
                           <p className="text-lg">{sector.name}</p>
                           <p className={sector.avgChange > 0 ? 'text-red-500' : 'text-blue-500'}>{sector.avgChange.toFixed(2)}%</p>
                           <p className="text-gray-500">{formatMarketCap(sector.value)}</p>
@@ -570,7 +570,8 @@ export default function PerfectStockMap() {
           </div>
         </div>
 
-        <div className="w-full h-24 bg-gray-50 flex items-center justify-center border-2 border-dashed text-gray-300 font-bold uppercase tracking-widest">Advertisement Area</div>
+        {/* [수정] 중간 광고 영역 텍스트 제거 */}
+        <div className="w-full h-24 bg-gray-50 flex items-center justify-center border-2 border-dashed"></div>
         
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="lg:w-48 space-y-1 border-t-4 border-black pt-3"> 
@@ -621,9 +622,8 @@ export default function PerfectStockMap() {
               이를 이용한 투자 결과에 대해 어떠한 법적 책임도 지지 않습니다.
             </p>
           </div>
-          <div className="w-full h-24 bg-gray-50 mt-6 border-2 border-dashed text-gray-300 font-bold uppercase flex items-center justify-center">
-            Advertisement Area
-          </div>
+          {/* [수정] 하단 광고 영역 텍스트 제거 */}
+          <div className="w-full h-24 bg-gray-50 mt-6 border-2 border-dashed flex items-center justify-center"></div>
         </footer>
       </main>
 
