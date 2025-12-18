@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Clock, MessageSquare, TrendingUp, TrendingDown, ThumbsUp, ThumbsDown, RefreshCcw } from 'lucide-react';
 
@@ -332,9 +332,8 @@ export default function PerfectStockMap() {
                   <div className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
                     <Clock size={10} /> {new Date().toLocaleString()} (20분 지연 데이터)
                   </div>
-                  {/* [수정] 문구 변경: 데이터는 10분마다 갱신됩니다 */}
                   <div className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-100">
-                    <RefreshCcw size={8} className="animate-spin-slow" />
+                    <RefreshCcw size={8} />
                     <span className="text-[9px] font-bold uppercase tracking-tighter">데이터는 10분마다 갱신됩니다</span>
                   </div>
                 </div>
@@ -366,9 +365,10 @@ export default function PerfectStockMap() {
                       style={{ display: sector.value >= 30 ? 'block' : 'none' }}
                       onMouseEnter={(e) => setTooltip({show: true, x: e.clientX, y: e.clientY, content: (
                         <div className="p-2 font-bold text-xs whitespace-nowrap">
-                          <p className="text-blue-600 underline text-sm">{sector.name}</p>
-                          <p>Total: {formatMarketCap(sector.value)}</p>
-                          <p>Avg: {sector.avgChange.toFixed(2)}%</p>
+                          {/* [섹터 툴팁 수정] 종목 툴팁과 통일 */}
+                          <p className="text-lg">{sector.name}</p>
+                          <p className={sector.avgChange > 0 ? 'text-red-500' : 'text-blue-500'}>{sector.avgChange.toFixed(2)}%</p>
+                          <p className="text-gray-500">{formatMarketCap(sector.value)}</p>
                         </div>
                       )})}
                     >
