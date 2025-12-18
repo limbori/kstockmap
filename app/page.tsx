@@ -108,7 +108,7 @@ export default function PerfectStockMap() {
     const { data } = await supabase
       .from('comments')
       .select('*')
-      .order('created_at', { ascending: true }) // 상단이 오래된 것 (정상 유지)
+      .order('created_at', { ascending: true }) 
       .limit(100); 
     if (data) setComments(data);
   };
@@ -613,9 +613,17 @@ export default function PerfectStockMap() {
           </div>
         </div>
 
-        <footer className="w-full pt-16 border-t px-4 pb-10 text-center">
-          <p className="text-[10px] text-gray-400 font-black italic uppercase">Disclaimer: Investment involves risk.</p>
-          <div className="w-full h-24 bg-gray-50 mt-6 border-2 border-dashed text-gray-300 font-bold uppercase flex items-center justify-center">Advertisement Area</div>
+        {/* [수정] 하단 면책 고지 섹션 - 요청하신 문구만 남김 */}
+        <footer className="w-full pt-16 border-t px-4 pb-10 text-center space-y-4">
+          <div className="max-w-4xl mx-auto">
+            <p className="text-[12px] text-gray-800 font-bold leading-relaxed">
+              본 사이트에서 제공하는 정보는 투자 참고용이며, 데이터 오류나 지연이 발생할 수 있습니다.<br />
+              이를 이용한 투자 결과에 대해 어떠한 법적 책임도 지지 않습니다.
+            </p>
+          </div>
+          <div className="w-full h-24 bg-gray-50 mt-6 border-2 border-dashed text-gray-300 font-bold uppercase flex items-center justify-center">
+            Advertisement Area
+          </div>
         </footer>
       </main>
 
