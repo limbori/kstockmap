@@ -261,8 +261,9 @@ export default function PerfectStockMap() {
     if (stocks.length === 0) return [];
     const groups: any = {};
     stocks.forEach(s => {
-      if (!groups[s.category]) groups[s.category] = { name: s.category, value: 0, stocks: [], sumRatio: 0 };
+      if (!groups[s.category]) groups[s.category] = { name: s.category, value: 0, stocks: [], sumRatio: 0, realMarcapSum: 0 };
       groups[s.category].value += s.marcap; 
+      groups[s.category].realMarcapSum += s.marcap; // 실제 시총 합계 저장
       groups[s.category].stocks.push(s);
       groups[s.category].sumRatio += s.change_ratio;
     });
@@ -367,7 +368,8 @@ export default function PerfectStockMap() {
                         <div className="p-2 font-bold text-xs whitespace-nowrap">
                           <p className="text-lg">{sector.name}</p>
                           <p className={sector.avgChange > 0 ? 'text-red-500' : 'text-blue-500'}>{sector.avgChange.toFixed(2)}%</p>
-                          <p className="text-gray-500">{formatMarketCap(sector.value)}</p>
+                          {/* [수정] value 대신 realMarcapSum을 사용하여 정확한 시총 합계 표시 */}
+                          <p className="text-gray-500">{formatMarketCap(sector.realMarcapSum)}</p>
                         </div>
                       )})}
                     >
@@ -403,7 +405,6 @@ export default function PerfectStockMap() {
                       {Math.min(stock.w, stock.h) > 0.5 && (
                         <>
                           <span className="font-[1000] text-white leading-none px-0.5 drop-shadow-sm break-all" style={{ fontSize: `clamp(5px, ${Math.min(stock.w, stock.h) * 0.7}px, 24px)`, lineHeight: '1' }}>{stock.name}</span>
-                          {/* [수정] 등락률 소수점 2자리로 변경 */}
                           <span className="text-white font-bold drop-shadow-md mt-0.5" style={{ fontSize: `clamp(4px, ${Math.min(stock.w, stock.h) * 0.5}px, 12px)`, lineHeight: '1' }}>{stock.change_ratio.toFixed(2)}%</span>
                         </>
                       )}
