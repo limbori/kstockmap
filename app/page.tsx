@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Clock, MessageSquare, TrendingUp, TrendingDown, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Clock, MessageSquare, TrendingUp, TrendingDown, ThumbsUp, ThumbsDown, RefreshCcw } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -67,22 +67,16 @@ export default function PerfectStockMap() {
   const [loading, setLoading] = useState(true);
   const [tooltip, setTooltip] = useState<{ show: boolean; x: number; y: number; content: React.ReactNode }>({ show: false, x: 0, y: 0, content: null });
   
-  // 채팅 관련 상태
   const [comments, setComments] = useState<any[]>([]);
   const [inputNick, setInputNick] = useState('');
   const [inputText, setInputText] = useState('');
-  
-  // 뉴스 상태
   const [newsMap, setNewsMap] = useState<{[key: string]: any[]}>({});
-
-  // 시장 지수 상태
   const [marketIndices, setMarketIndices] = useState({
     kospi: { price: 0, change: 0 },
     kosdaq: { price: 0, change: 0 },
     usd: { price: 0, change: 0 },
   });
 
-  // 1. 주식 데이터 Fetch
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -93,7 +87,6 @@ export default function PerfectStockMap() {
     fetchData();
   }, [marketType]);
 
-  // 2. 시장 지수 Fetch
   useEffect(() => {
     const fetchMarketIndices = async () => {
       try {
@@ -111,14 +104,12 @@ export default function PerfectStockMap() {
     return () => clearInterval(interval);
   }, []);
 
-  // 3. 댓글(채팅) 불러오기 함수
   const fetchComments = async () => {
     const { data } = await supabase
       .from('comments')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: true }) // 상단이 오래된 것 (정상 유지)
       .limit(100); 
-
     if (data) setComments(data);
   };
 
@@ -128,14 +119,11 @@ export default function PerfectStockMap() {
     return () => clearInterval(interval);
   }, []);
 
-  // 댓글 등록 함수
   const handleAddComment = async () => {
     if (!inputNick.trim() || !inputText.trim()) return alert("닉네임과 내용을 입력해주세요.");
-
     const { error } = await supabase
       .from('comments')
       .insert([{ nick: inputNick, text: inputText }]);
-
     if (error) {
       console.error(error);
       alert("등록 실패");
@@ -145,42 +133,35 @@ export default function PerfectStockMap() {
     }
   };
 
-  // 좋아요/싫어요 함수
   const handleVote = async (id: number, type: 'up' | 'down') => {
     const storageKey = `voted_${id}`;
     if (localStorage.getItem(storageKey)) {
         alert("이미 평가한 의견입니다.");
         return;
     }
-
     setComments(prev => prev.map(c => {
         if (c.id === id) {
             return type === 'up' ? { ...c, up: c.up + 1 } : { ...c, down: c.down + 1 };
         }
         return c;
     }));
-
     localStorage.setItem(storageKey, 'true');
-
     const rpcName = type === 'up' ? 'increment_up' : 'increment_down';
     await supabase.rpc(rpcName, { row_id: id });
   };
 
-  // [뉴스 필터링 함수]
   const filterNewsItems = (items: any[]) => {
     if (!items) return [];
     const BANNED_DOMAINS = ['finomy.com', 'g-enews.com', 'pinpointnews.co.kr', 'thekpm.com', 'famtimes.co.kr', 'nbntv.co.kr'];
     return items.filter(item => {
         const link = item.originallink || item.link || '';
         const titleRaw = item.title || '';
-        
         if (BANNED_DOMAINS.some(domain => link.includes(domain))) return false;
         if ((titleRaw.match(/,/g) || []).length > 30) return false;
         return true;
     });
   };
 
-  // 4. 뉴스 Fetch
   useEffect(() => {
     if (stocks.length > 0) {
       const groups: any = {};
@@ -193,43 +174,33 @@ export default function PerfectStockMap() {
          groups[s.category].totalMarcap += s.marcap;
          groups[s.category].stocks.push(s);
       });
-
       const candidates = Object.values(groups).filter((g: any) => 
           g.count >= 2 && g.totalMarcap >= 30
       );
-
       const sortedCandidates = candidates
         .map((g: any) => ({ ...g, avg: g.sumRatio / g.count }))
         .sort((a: any, b: any) => a.avg - b.avg);
-
       const best2 = sortedCandidates.slice(-2).reverse(); 
-      const worst2 = sortedCandidates.slice(0, 2);        
+      const worst2 = sortedCandidates.slice(0, 2);        
 
       const fetchNews = async (sectorName: string, stocks: any[], keyword: string) => {
         try {
           let candidates = stocks.filter((s: any) => s.marcap >= 3);
           if (candidates.length === 0) candidates = stocks;
-          
           const sorted = candidates.sort((a: any, b: any) => 
-             keyword === '상승' ? b.change_ratio - a.change_ratio : a.change_ratio - b.change_ratio
+              keyword === '상승' ? b.change_ratio - a.change_ratio : a.change_ratio - b.change_ratio
           );
           const targetStockName = sorted[0]?.name;
-
           if (!targetStockName) return;
-
           const searchQuery = `${targetStockName} ${keyword}`; 
-
           const res = await fetch(`/api/news?query=${encodeURIComponent(searchQuery)}`);
           const json = await res.json();
           const cleanItems = filterNewsItems(json.items || []);
-          
           setNewsMap(prev => ({...prev, [sectorName]: cleanItems}));
-
         } catch (e) {
           console.error("News fetch error", e);
         }
       };
-
       best2.forEach(s => fetchNews(s.name, s.stocks, '상승'));
       worst2.forEach(s => fetchNews(s.name, s.stocks, '급락'));
     }
@@ -246,7 +217,6 @@ export default function PerfectStockMap() {
       });
       const filtered = Object.values(groups).filter((g: any) => g.count >= 2 && g.totalMarcap >= 30);
       const sorted = filtered.map((g: any) => ({ ...g, avg: g.sumRatio / g.count })).sort((a: any, b: any) => a.avg - b.avg);
-      
       return [sorted.slice(-2).reverse(), sorted.slice(0, 2)];
   }, [stocks]);
 
@@ -324,7 +294,6 @@ export default function PerfectStockMap() {
     <div className="min-h-screen bg-white text-black font-sans selection:bg-blue-100">
       <header className="w-full max-w-7xl mx-auto py-6 border-b-4 border-black flex justify-between items-center px-4 sticky top-0 bg-white z-50">
         <h1 className="text-4xl font-[1000] italic text-blue-900 tracking-tighter uppercase">KOREA STOCK MAP</h1>
-        {/* 우측 상단: 시장 지수 */}
         <div className="flex gap-4 items-center bg-gray-50 px-3 py-1.5 rounded-xl border-2 border-gray-100 shadow-sm">
             <div className="flex flex-col items-end leading-none">
                 <span className="text-[10px] font-bold text-gray-500">KOSPI</span>
@@ -352,28 +321,29 @@ export default function PerfectStockMap() {
       <div className="w-full max-w-7xl mx-auto h-24 bg-gray-50 my-2 border flex items-center justify-center text-gray-300 font-bold uppercase tracking-widest">Advertisement Area</div>
 
       <main className="max-w-7xl mx-auto p-4 space-y-4">
-        {/* 상단 툴바 영역 */}
         <div className="flex justify-between items-end pb-2">
-            {/* 좌측: 버튼 및 시간 텍스트 */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
                 <div className="flex bg-gray-100 p-0.5 rounded-lg border">
                   {['KOSPI200', 'KOSDAQ150'].map(t => (
                     <button key={t} onClick={() => setMarketType(t)} className={`px-3 py-1 rounded-md font-black text-[10px] transition ${marketType === t ? 'bg-black text-white' : 'text-gray-400'}`}>{t}</button>
                   ))}
                 </div>
-                {/* [수정됨] 시간 위치 이동 (버튼 우측) */}
-                <div className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
-                  <Clock size={10} /> {new Date().toLocaleString()} (20분 지연 데이터)
+                <div className="flex items-center gap-2">
+                  <div className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
+                    <Clock size={10} /> {new Date().toLocaleString()} (20분 지연 데이터)
+                  </div>
+                  <div className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 animate-pulse">
+                    <RefreshCcw size={8} />
+                    <span className="text-[9px] font-black uppercase">10분마다 자동 갱신</span>
+                  </div>
                 </div>
             </div>
-            {/* 우측: 참조 문구 */}
             <div className="text-[11px] text-gray-500 font-bold flex items-center gap-1">
-               * 상승률 상위 2개, 하락률 상위 2개 섹터를 표시함
+                * 상승률 상위 2개, 하락률 상위 2개 섹터를 표시함
             </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8 items-start">
-          {/* ================= 좌측: 트리맵 ================= */}
           <div className="lg:w-3/4 flex flex-col gap-6 w-full">
             <div 
               className="relative w-full h-[700px] bg-black border-[4px] border-black overflow-hidden shadow-2xl rounded-sm"
@@ -442,7 +412,6 @@ export default function PerfectStockMap() {
               ))}
             </div>
             
-            {/* 의견란 (토론 게시판) [높이 200px] */}
             <div className="bg-white border-4 border-black rounded-3xl p-4 shadow-sm">
               <h3 className="text-lg font-black mb-3 underline decoration-blue-500 uppercase italic flex gap-2"><MessageSquare size={18}/> 토론 게시판</h3>
               <div className="h-[200px] overflow-y-auto mb-3 bg-gray-50 border-2 border-gray-100 rounded-2xl p-2 space-y-2">
@@ -490,10 +459,7 @@ export default function PerfectStockMap() {
             </div>
           </div>
 
-          {/* ================= 우측 사이드바 ================= */}
           <div className="lg:w-1/4 space-y-4 flex flex-col">
-              
-              {/* 섹터 & 뉴스 (상승 1~2위) - 색상 동적 적용 */}
               {top2Sectors.map((sector, idx) => (
                 <div key={`rise-${idx}`} className={`bg-white border-4 rounded-3xl p-4 shadow-sm ${sector.avg > 0 ? 'border-red-500' : 'border-blue-500'}`}>
                    <div className={`flex justify-between items-center border-b-2 pb-2 mb-2 ${sector.avg > 0 ? 'border-red-100' : 'border-blue-100'}`}>
@@ -521,7 +487,6 @@ export default function PerfectStockMap() {
                 </div>
               ))}
 
-              {/* 섹터 & 뉴스 (하락 1~2위) - 색상 동적 적용 */}
               {bottom2Sectors.map((sector, idx) => (
                 <div key={`fall-${idx}`} className={`bg-white border-4 rounded-3xl p-4 shadow-sm ${sector.avg > 0 ? 'border-red-500' : 'border-blue-500'}`}>
                    <div className={`flex justify-between items-center border-b-2 pb-2 mb-2 ${sector.avg > 0 ? 'border-red-100' : 'border-blue-100'}`}>
@@ -549,10 +514,8 @@ export default function PerfectStockMap() {
                 </div>
               ))}
 
-              {/* 3. 상승률 & 하락률 TOP 10 */}
               <div className="bg-white border-4 border-black rounded-3xl p-4 shadow-sm">
                  <div className="flex gap-2">
-                   {/* 왼쪽: 상승률 TOP 10 */}
                    <div className="flex-1 border-r-2 border-gray-100 pr-2">
                      <h3 className="font-black text-xs italic uppercase border-b-2 border-black pb-2 mb-2 flex items-center gap-1 text-red-600">
                         <TrendingUp size={12} /> 상승 TOP 10
@@ -577,7 +540,6 @@ export default function PerfectStockMap() {
                      </div>
                    </div>
 
-                   {/* 오른쪽: 하락률 TOP 10 */}
                    <div className="flex-1 pl-2">
                      <h3 className="font-black text-xs italic uppercase border-b-2 border-black pb-2 mb-2 flex items-center gap-1 text-blue-600">
                         <TrendingDown size={12} /> 하락 TOP 10
@@ -607,10 +569,8 @@ export default function PerfectStockMap() {
           </div>
         </div>
 
-        {/* 하단 광고 영역 */}
         <div className="w-full h-24 bg-gray-50 flex items-center justify-center border-2 border-dashed text-gray-300 font-bold uppercase tracking-widest">Advertisement Area</div>
         
-        {/* 하단 섹터 리스트 */}
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="lg:w-48 space-y-1 border-t-4 border-black pt-3"> 
             <h2 className="font-bold text-base underline decoration-blue-500 underline-offset-4 mb-2">섹터 상승률 순위</h2>
@@ -628,7 +588,7 @@ export default function PerfectStockMap() {
                 className={`border-4 rounded-3xl p-5 h-[350px] flex flex-col shadow-lg ${getCardStyle(s.avg)}`}
               >
                 <p className={`font-black border-b-4 pb-2 mb-3 text-sm flex justify-between uppercase italic ${
-                   s.avg >= 0 ? 'border-red-400/30' : 'border-blue-400/30'
+                    s.avg >= 0 ? 'border-red-400/30' : 'border-blue-400/30'
                 }`}>
                     <span className={getHeaderColor(s.avg)}>{s.name}</span>
                     <span className={getHeaderColor(s.avg)}>{s.avg.toFixed(1)}%</span>
