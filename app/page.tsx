@@ -318,7 +318,6 @@ export default function PerfectStockMap() {
         </div>
       </header>
 
-      {/* [수정] 상단 광고 영역 텍스트 제거 */}
       <div className="w-full max-w-7xl mx-auto h-24 bg-gray-50 my-2 border flex items-center justify-center"></div>
 
       <main className="max-w-7xl mx-auto p-4 space-y-4">
@@ -404,7 +403,8 @@ export default function PerfectStockMap() {
                       {Math.min(stock.w, stock.h) > 0.5 && (
                         <>
                           <span className="font-[1000] text-white leading-none px-0.5 drop-shadow-sm break-all" style={{ fontSize: `clamp(5px, ${Math.min(stock.w, stock.h) * 0.7}px, 24px)`, lineHeight: '1' }}>{stock.name}</span>
-                          <span className="text-white font-bold drop-shadow-md mt-0.5" style={{ fontSize: `clamp(4px, ${Math.min(stock.w, stock.h) * 0.5}px, 12px)`, lineHeight: '1' }}>{stock.change_ratio.toFixed(1)}%</span>
+                          {/* [수정] 등락률 소수점 2자리로 변경 */}
+                          <span className="text-white font-bold drop-shadow-md mt-0.5" style={{ fontSize: `clamp(4px, ${Math.min(stock.w, stock.h) * 0.5}px, 12px)`, lineHeight: '1' }}>{stock.change_ratio.toFixed(2)}%</span>
                         </>
                       )}
                     </div>
@@ -535,7 +535,7 @@ export default function PerfectStockMap() {
                                     {s.name}
                                  </a>
                               </div>
-                              <span className="text-red-500 whitespace-nowrap text-[9px]">+{s.change_ratio.toFixed(1)}%</span>
+                              <span className="text-red-500 whitespace-nowrap text-[9px]">+{s.change_ratio.toFixed(2)}%</span>
                            </div>
                         )) : <div className="text-[10px] text-gray-400 text-center py-2">상승 종목 없음</div>}
                      </div>
@@ -559,7 +559,7 @@ export default function PerfectStockMap() {
                                     {s.name}
                                  </a>
                               </div>
-                              <span className="text-blue-500 whitespace-nowrap text-[9px]">{s.change_ratio.toFixed(1)}%</span>
+                              <span className="text-blue-500 whitespace-nowrap text-[9px]">{s.change_ratio.toFixed(2)}%</span>
                            </div>
                         )) : <div className="text-[10px] text-gray-400 text-center py-2">하락 종목 없음</div>}
                      </div>
@@ -570,7 +570,6 @@ export default function PerfectStockMap() {
           </div>
         </div>
 
-        {/* [수정] 중간 광고 영역 텍스트 제거 */}
         <div className="w-full h-24 bg-gray-50 flex items-center justify-center border-2 border-dashed"></div>
         
         <div className="flex flex-col lg:flex-row gap-6">
@@ -579,7 +578,7 @@ export default function PerfectStockMap() {
             {sectorRanking.map((s, i) => (
               <div key={i} className="flex justify-between text-[11px] font-bold border-b border-gray-100 py-1"> 
                 <span className="text-black">#{i+1} {s.name}</span>
-                <span className={s.avg >= 0 ? 'text-red-500' : 'text-blue-500'}>{s.avg.toFixed(1)}%</span> 
+                <span className={s.avg >= 0 ? 'text-red-500' : 'text-blue-500'}>{s.avg.toFixed(2)}%</span> 
               </div>
             ))}
           </div>
@@ -593,7 +592,7 @@ export default function PerfectStockMap() {
                     s.avg >= 0 ? 'border-red-400/30' : 'border-blue-400/30'
                 }`}>
                     <span className={getHeaderColor(s.avg)}>{s.name}</span>
-                    <span className={getHeaderColor(s.avg)}>{s.avg.toFixed(1)}%</span>
+                    <span className={getHeaderColor(s.avg)}>{s.avg.toFixed(2)}%</span>
                 </p>
                 <div className="overflow-y-auto flex-1 space-y-2 scrollbar-hide">
                   {stocks.filter(st => st.category === s.name).sort((a,b)=>b.change_ratio-a.change_ratio).map((st, j) => (
@@ -606,7 +605,7 @@ export default function PerfectStockMap() {
                         >
                             {st.name}
                         </a>
-                        <span className={st.change_ratio >= 0 ? 'text-red-700' : 'text-blue-700'}>{st.change_ratio.toFixed(1)}%</span> 
+                        <span className={st.change_ratio >= 0 ? 'text-red-700' : 'text-blue-700'}>{st.change_ratio.toFixed(2)}%</span> 
                     </div>
                   ))}
                 </div>
@@ -622,7 +621,6 @@ export default function PerfectStockMap() {
               이를 이용한 투자 결과에 대해 어떠한 법적 책임도 지지 않습니다.
             </p>
           </div>
-          {/* [수정] 하단 광고 영역 텍스트 제거 */}
           <div className="w-full h-24 bg-gray-50 mt-6 border-2 border-dashed flex items-center justify-center"></div>
         </footer>
       </main>
