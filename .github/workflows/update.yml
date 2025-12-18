@@ -1,0 +1,28 @@
+name: Update Stock Data Every 10 Minutes
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # 10분마다 실행 (UTC 기준)
+  workflow_dispatch: # 버튼 눌러서 수동 실행도 가능하게 함
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas FinanceDataReader yfinance supabase
+
+      - name: Run script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python data_worker.py
