@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Clock, MessageSquare, TrendingUp, TrendingDown, ThumbsUp, ThumbsDown, RefreshCcw } from 'lucide-react';
 
@@ -332,9 +332,10 @@ export default function PerfectStockMap() {
                   <div className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
                     <Clock size={10} /> {new Date().toLocaleString()} (20분 지연 데이터)
                   </div>
-                  <div className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 animate-pulse">
-                    <RefreshCcw size={8} />
-                    <span className="text-[9px] font-black uppercase">10분마다 자동 갱신</span>
+                  {/* [수정] 문구 변경: 데이터는 10분마다 갱신됩니다 */}
+                  <div className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-100">
+                    <RefreshCcw size={8} className="animate-spin-slow" />
+                    <span className="text-[9px] font-bold uppercase tracking-tighter">데이터는 10분마다 갱신됩니다</span>
                   </div>
                 </div>
             </div>
@@ -613,7 +614,6 @@ export default function PerfectStockMap() {
           </div>
         </div>
 
-        {/* [수정] 하단 면책 고지 섹션 - 요청하신 문구만 남김 */}
         <footer className="w-full pt-16 border-t px-4 pb-10 text-center space-y-4">
           <div className="max-w-4xl mx-auto">
             <p className="text-[12px] text-gray-800 font-bold leading-relaxed">
