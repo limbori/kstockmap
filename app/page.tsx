@@ -162,32 +162,45 @@ export default function PerfectStockMap() {
     });
   };
 
-  useEffect(() => {
-    if (stocks.length > 0) {
-      const groups: any = {};
-      stocks.forEach(s => {
-         if (!groups[s.category]) {
-             groups[s.category] = { name: s.category, sumRatio: 0, count: 0, totalMarcap: 0, stocks: [] };
-         }
-         groups[s.category].sumRatio += s.change_ratio;
-         groups[s.category].count += 1;
-         groups[s.category].totalMarcap += s.marcap;
-         groups[s.category].stocks.push(s);
-      });
-      const candidates = Object.values(groups).filter((g: any) => 
-          g.count >= 2 && g.totalMarcap >= 30
-      );
-      const sortedCandidates = candidates
-        .map((g: any) => ({ ...g, avg: g.sumRatio / g.count }))
-        .sort((a: any, b: any) => a.avg - b.avg);
-      const best2 = sortedCandidates.slice(-2).reverse(); 
-      const worst2 = sortedCandidates.slice(0, 2);        
+  const [top2Sectors, bottom2Sectors] = useMemo(() => {
+    if (stocks.length === 0) return [[], []];
+    
+    // [수정] 시장 타입에 따라 시총 기준 변경 (KOSPI 30조, KOSDAQ 3조)
+    const threshold = marketType === 'KOSPI200' ? 30 : 3;
 
-      const fetchNews = async (sectorName: string, stocks: any[], keyword: string) => {
+    const groups: any = {};
+    stocks.forEach(s => {
+       if (!groups[s.category]) groups[s.category] = { name: s.category, sumRatio: 0, count: 0, totalMarcap: 0, stocks: [] };
+       groups[s.category].sumRatio += s.change_ratio;
+       groups[s.category].count += 1;
+       groups[s.category].totalMarcap += s.marcap;
+       groups[s.category].stocks.push(s);
+    });
+
+    const candidates = Object.values(groups)
+      .filter((g: any) => g.count >= 2 && g.totalMarcap >= threshold)
+      .map((g: any) => ({ ...g, avg: g.sumRatio / g.count }))
+      .sort((a: any, b: any) => a.avg - b.avg);
+
+    // [수정] 중복 제거 로직 추가
+    const best = [...candidates].reverse().slice(0, 2);
+    const bestNames = best.map(b => b.name);
+    
+    // 하락 섹터는 상승 섹터에 이미 포함된 것을 제외하고 추출
+    const worst = candidates
+      .filter(c => !bestNames.includes(c.name))
+      .slice(0, 2);
+
+    return [best, worst];
+  }, [stocks, marketType]);
+
+  useEffect(() => {
+    if (top2Sectors.length > 0 || bottom2Sectors.length > 0) {
+      const allSectors = [...top2Sectors, ...bottom2Sectors];
+      
+      const fetchNews = async (sector: any, keyword: string) => {
         try {
-          let candidates = stocks.filter((s: any) => s.marcap >= 3);
-          if (candidates.length === 0) candidates = stocks;
-          const sorted = candidates.sort((a: any, b: any) => 
+          const sorted = sector.stocks.sort((a: any, b: any) => 
               keyword === '상승' ? b.change_ratio - a.change_ratio : a.change_ratio - b.change_ratio
           );
           const targetStockName = sorted[0]?.name;
@@ -196,29 +209,16 @@ export default function PerfectStockMap() {
           const res = await fetch(`/api/news?query=${encodeURIComponent(searchQuery)}`);
           const json = await res.json();
           const cleanItems = filterNewsItems(json.items || []);
-          setNewsMap(prev => ({...prev, [sectorName]: cleanItems}));
+          setNewsMap(prev => ({...prev, [sector.name]: cleanItems}));
         } catch (e) {
           console.error("News fetch error", e);
         }
       };
-      best2.forEach(s => fetchNews(s.name, s.stocks, '상승'));
-      worst2.forEach(s => fetchNews(s.name, s.stocks, '급락'));
-    }
-  }, [stocks]);
 
-  const [top2Sectors, bottom2Sectors] = useMemo(() => {
-      if (stocks.length === 0) return [[], []];
-      const groups: any = {};
-      stocks.forEach(s => {
-         if (!groups[s.category]) groups[s.category] = { name: s.category, sumRatio: 0, count: 0, totalMarcap: 0 };
-         groups[s.category].sumRatio += s.change_ratio;
-         groups[s.category].count += 1;
-         groups[s.category].totalMarcap += s.marcap;
-      });
-      const filtered = Object.values(groups).filter((g: any) => g.count >= 2 && g.totalMarcap >= 30);
-      const sorted = filtered.map((g: any) => ({ ...g, avg: g.sumRatio / g.count })).sort((a: any, b: any) => a.avg - b.avg);
-      return [sorted.slice(-2).reverse(), sorted.slice(0, 2)];
-  }, [stocks]);
+      top2Sectors.forEach(s => fetchNews(s, '상승'));
+      bottom2Sectors.forEach(s => fetchNews(s, '급락'));
+    }
+  }, [top2Sectors, bottom2Sectors]);
 
   const formatMarketCap = (value: number) => {
     return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '조';
@@ -263,7 +263,7 @@ export default function PerfectStockMap() {
     stocks.forEach(s => {
       if (!groups[s.category]) groups[s.category] = { name: s.category, value: 0, stocks: [], sumRatio: 0, realMarcapSum: 0 };
       groups[s.category].value += s.marcap; 
-      groups[s.category].realMarcapSum += s.marcap; // 실제 시총 합계 저장
+      groups[s.category].realMarcapSum += s.marcap;
       groups[s.category].stocks.push(s);
       groups[s.category].sumRatio += s.change_ratio;
     });
@@ -340,7 +340,7 @@ export default function PerfectStockMap() {
                 </div>
             </div>
             <div className="text-[11px] text-gray-500 font-bold flex items-center gap-1">
-                * 상승률 상위 2개, 하락률 상위 2개 섹터를 표시함
+                * {marketType === 'KOSPI200' ? '시총 30조 이상' : '시총 3조 이상'} 섹터 중 등락 상위 4개를 표시함
             </div>
         </div>
 
@@ -368,7 +368,6 @@ export default function PerfectStockMap() {
                         <div className="p-2 font-bold text-xs whitespace-nowrap">
                           <p className="text-lg">{sector.name}</p>
                           <p className={sector.avgChange > 0 ? 'text-red-500' : 'text-blue-500'}>{sector.avgChange.toFixed(2)}%</p>
-                          {/* [수정] value 대신 realMarcapSum을 사용하여 정확한 시총 합계 표시 */}
                           <p className="text-gray-500">{formatMarketCap(sector.realMarcapSum)}</p>
                         </div>
                       )})}
