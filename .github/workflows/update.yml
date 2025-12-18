@@ -2,8 +2,8 @@ name: Update Stock Data Every 10 Minutes
 
 on:
   schedule:
-    - cron: '*/10 * * * *' # 10분마다 실행 (UTC 기준)
-  workflow_dispatch: # 버튼 눌러서 수동 실행도 가능하게 함
+    - cron: '*/10 * * * *' # 10분마다 실행
+  workflow_dispatch: # 수동 실행 버튼
 
 jobs:
   build:
@@ -15,11 +15,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.10' # 버전을 3.10으로 상향
 
       - name: Install dependencies
         run: |
-          pip install pandas FinanceDataReader yfinance supabase
+          python -m pip install --upgrade pip
+          pip install pandas yfinance supabase finance-datareader
+          # FinanceDataReader 대신 finance-datareader(소문자)로 설치하면 더 정확합니다.
 
       - name: Run script
         env:
