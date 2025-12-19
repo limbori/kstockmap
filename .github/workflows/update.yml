@@ -2,10 +2,9 @@ name: Update Stock Data
 
 on:
   schedule:
-    # 한국 시간(KST) 평일 오전 9시 00분부터 오후 5시 00분까지 10분마다 실행
-    # UTC 기준 00:00 ~ 08:00
-    - cron: '*/10 0-8 * * 1-5'
-  workflow_dispatch: # 이 줄이 있어야 수동 실행 버튼이 생깁니다.
+    # 한국 시간(KST) 평일 오전 9시부터 오후 5시까지 20분마다 실행
+    - cron: '*/20 0-8 * * 1-5'
+  workflow_dispatch: # 수동 실행 버튼
 
 jobs:
   update:
@@ -17,11 +16,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.11' # 확실하게 3.11로 고정
 
       - name: Install dependencies
         run: |
-          pip install pandas yfinance supabase financial-data-reader
+          python -m pip install --upgrade pip
+          pip install pandas yfinance supabase finance-datareader # 패키지명: finance-datareader (하이픈 주의!)
 
       - name: Run script
         env:
