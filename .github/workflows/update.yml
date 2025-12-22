@@ -1,10 +1,15 @@
 name: Update Stock Data
 
 on:
+  # 1. 외부 신호(cron-job.org)를 받기 위한 설정 (중요!)
+  repository_dispatch:
+    types: [manual-trigger]
+  
+  # 2. 깃허브 자체 스케줄러 (보험용)
   schedule:
-    # 20분 단위로 실행 (10분보다 성공 확률이 높음)
-    # 한국시간 기준 09:00 ~ 17:00 (UTC 00:00 ~ 08:00)
     - cron: '0,20,40 0-8 * * 1-5'
+    
+  # 3. 깃허브 사이트에서 직접 버튼 누르기
   workflow_dispatch:
 
 jobs:
